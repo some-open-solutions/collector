@@ -1,5 +1,5 @@
 // get dropbox token for user
-var CLIENT_ID = '6xumb4iloq9sz1u';
+var CLIENT_ID = '2u3y3zc7wn1bnkn';
 
 (function(window){
 	window.utils = {
@@ -116,7 +116,7 @@ function check_authenticated(){
     dbx.usersGetCurrentAccount()
     .then(function(account_info){
       $("#dropbox_account_email").html(account_info.email);
-      $("#startup_prog").html("Dropbox account: <a href='https://www.dropbox.com/home/Apps/Open-Collector' target='_blank'>" + account_info.email + "</a> <button class='btn btn-info' id='intro_switch_dbx'>Switch account</button>");
+      $("#startup_prog").html("Dropbox account: <a href='https://www.dropbox.com/home/Apps/Collector-SOS' target='_blank'>" + account_info.email + "</a> <button class='btn btn-info' id='intro_switch_dbx'>Switch account</button>");
       $("#intro_switch_dbx").on("click",function(){
         force_reauth_dbx();
       });
@@ -230,6 +230,9 @@ function load_master_json(link_created){
       encrypt_obj.generate_keys();
     } else {
 			list_keys();
+		}
+		if(typeof(master_json.data) == "undefined"){
+			master_json.data = {};
 		}
     if(typeof(master_json.data.scripts)== "undefined" || Object.keys(master_json.data.scripts).length == 0){
       encrypt_obj.save_script_url();

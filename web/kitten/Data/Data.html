@@ -178,8 +178,12 @@ encrypt_obj = {
                       console.dir("this_decrypted_message");
                       console.dir(this_decrypted_message);
                       this_decrypted_message = this_decrypted_message.map(function(row){
-                        row["username"] = default_filename;
-                        all_decrypted.push(row);
+                        try{
+													row["username"] = default_filename;
+													all_decrypted.push(row);
+												} catch(error){
+													//nothing
+												}
                       });
                     });
                     if(encrypt_obj.current_batch.length > 1){
@@ -241,8 +245,9 @@ encrypt_obj = {
               if(typeof(master_json.keys.archived) == "undefined"){
                 master_json.keys.archived = [];
               }
-              var all_private_keys = master_json.keys.archived.map(function(row){
-                return row.encrypted_private_key
+							var all_private_keys = []
+              master_json.keys.archived.forEach(function(row){
+                all_private_keys.push(row.encrypted_private_key);
               });
               all_private_keys.push(master_json.keys.encrypted_private_key);
               combine_password_key(all_private_keys,user_password);
@@ -399,6 +404,9 @@ encrypt_obj = {
   },
   save_script_url:function(){
 		//check the user is logged in
+		if(typeof(master_json.data.scripts) == "undefined"){
+			master_json.data.scripts = {};
+		}
 		if(window.localStorage.getItem("session_code") !== null){
 			//give them the main script url
 			master_json.data.scripts["free"] = [
