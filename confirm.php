@@ -19,7 +19,7 @@
 		Kitten release (2019) author: Dr. Anthony Haffey (a.haffey@reading.ac.uk)
 */
 
-require_once ("cleanRequests.php");
+//require_once ("cleanRequests.php");
 
 $page           = $_GET['page'];
 $user_email     = $_GET['email'];
@@ -27,7 +27,7 @@ $confirm_code   = $_GET['confirm_code'];
 
 
 
-require_once "../../sqlConnect.php";
+require_once "../sqlConnect.php";
 
 $sql 		= "SELECT * FROM `users` WHERE email='$user_email'"; // "WHERE email='".$user_email."' LIMIT 1;
 $result = $conn->query($sql);
