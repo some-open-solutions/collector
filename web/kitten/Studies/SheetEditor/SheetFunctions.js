@@ -136,6 +136,7 @@ function list_experiments(){
       clean_conditions();
       $("#dropbox_inputs").show();
       update_handsontables();
+      update_server_table();
     });
   }
 	//do longer synch with dropbox if the user is using dropbox
@@ -232,6 +233,7 @@ function renderItems() {
   list_surveys();
 	list_trialtypes();
 	list_graphics();
+  list_servers();
 
 	var published_list = dev_obj.published_links;
 	master_json.exp_mgmt.published_ids = {};
@@ -499,20 +501,22 @@ function upload_exp_contents(these_contents,this_filename){
               if(new_name){
                 unique_experiment(new_name,content);
               } else {
-                upload_to_master_json(exp_name,parsed_contents);
+                //upload_to_master_json(exp_name,parsed_contents);
               }
             });
           } else {
+            master_json.exp_mgmt.experiment = suggested_name;
             master_json.exp_mgmt.experiments[suggested_name] = content;
             list_experiments();
-            upload_to_master_json(exp_name,parsed_contents);
+            $("#upload_experiment_modal").hide();
+            //upload_to_master_json(exp_name,parsed_contents);
           }
         }
         unique_experiment(exp_name,parsed_contents);
         $("#save_btn").click();
 
       } else {
-        upload_to_master_json(exp_name,parsed_contents);
+        //upload_to_master_json(exp_name,parsed_contents);
       }
 		}
 	});

@@ -245,7 +245,10 @@ $("#run_btn").on("click",function(){
 		select_html += "<option>" + condition.name + "</option>";
 	});
 	select_html += "</select>";
+  
+  
 
+  
 	switch(dev_obj.context){
 		case "github":
 		case "server":
@@ -284,13 +287,21 @@ $("#run_btn").on("click",function(){
 
 						}
 					},
-					cancel: {
+					publish: {
+						label: "Publish",
+						className: 'btn-primary',
+						callback: function(){
+							update_server_table();
+              $("#login_modal").fadeIn();
+						}
+					},
+          cancel: {
 						label: "Cancel",
 						className: 'btn-secondary',
 						callback: function(){
 							//nada;
 						}
-					}
+          }
 				}
 			});
 			break;
@@ -393,11 +404,13 @@ $("#save_btn").on("click", function(){
 		 typeof(master_json.keys.public_key) == "undefined"){
 			 encrypt_obj.generate_keys();
 	}
+  
 	var experiment 						= master_json.exp_mgmt.experiment;
   var this_exp 							= master_json.exp_mgmt.experiments[experiment];
+  
+  if(typeof(this_exp) !== "undefined"){
       this_exp.public_key   = master_json.keys.public_key;
-      this_exp.data_scripts	= master_json.data.scripts;
-
+  }
 	//parse procs for survey saving next
 	if($("#experiment_list").val() !== null) {
     this_exp.parsed_procs = {};
@@ -547,28 +560,6 @@ $("#save_btn").on("click", function(){
             .then(function(returned_link){
               this_exp.location = returned_link.url;
 							dbx_obj.new_upload({path: "/Experiments/"+experiment+".json", contents: JSON.stringify(this_exp), mode:'overwrite'},function(location_saved){
-									switch(dev_obj.context){
-										case "github":
-										case "server":
-											$.post("https://ocollector.org/kitten/AjaxMySQL.php",
-												{
-													location:     this_exp.location,
-													experiment:   experiment,
-													action:       "update_experiment",
-													session_code: window.localStorage.getItem("session_code"),
-													email: 				window.localStorage.getItem("user_email")
-												},
-												function(returned_data){											
-													if(returned_data.indexOf("Error:") == -1){
-														custom_alert(returned_data);												
-													} else {
-														bootbox.alert(returned_data);
-													}
-												}
-											);
-											break;
-									}
-
 									$("#run_link").attr("href","../"+ master_json.exp_mgmt.version + "/RunStudy.html?location="+this_exp.location);
 									update_master_json();
 								},function(error){
@@ -586,6 +577,8 @@ $("#save_btn").on("click", function(){
         },
         "filesUpload");
     }
+  } else {
+    update_master_json();
   }
   if(dev_obj.context == "localhost"){
     eel.save_master_json(master_json);
@@ -627,7 +620,7 @@ $("#versions_btn").on("click",function(){
 		bootbox.alert("If you login a dropbox account, it'll automatically backup your experiment files");
 	} else {
 		experiment = master_json.exp_mgmt.experiment;
-		var version_address = "https://www.dropbox.com/history/Apps/Open-Collector/experiments/"+experiment+".json?_subject_uid="+ $_GET.uid +"&undelete=1";
+		var version_address = "https://www.dropbox.com/history/Apps/Collector-SOS/experiments/"+experiment+".json?_subject_uid="+ $_GET.uid +"&undelete=1";
 
 		$("#synch_btn").on("click",function(){
 			alert("hi there");
