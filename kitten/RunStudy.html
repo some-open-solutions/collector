@@ -485,7 +485,9 @@ function create_exp_json_variables(){
 		exp_json.progress_bar_visible = true; //not doing anything at the moment	
 		exp_json.trial_no = 0;
 		exp_json.post_no  = 0;
-		exp_json.responses = [];
+		if(typeof(exp_json.responses) == "undefined"){
+			exp_json.responses = [];
+		}
 	}
 	Study.activate_pipe();
 }
@@ -525,6 +527,10 @@ function final_trial(){
             online_data_obj.finished_and_stored = true;
             $("#google_progress").css("width","100%");
             setTimeout(function(){
+							if(typeof(exp_json.this_condition.forward_at_end) !== "undefined" && 
+												exp_json.this_condition.forward_at_end  !== ""){
+								bootbox.alert("The next phase of your experiment is <a class='btn btn-primary' style='margin:2px' href='"+ exp_json.this_condition.forward_at_end +"' target='_blank'>here</a> - please continue there.");
+							}
               if(exp_json.this_condition.download_at_end !== "off"){
                 var download_at_end_html = " If you'd like to download your raw data <span id='download_json'>click here</span></h1>";
               } else {
@@ -1055,9 +1061,9 @@ function shuffle_start_exp(){
 				}
 		});
 		exp_json.parsed_proc = new_proc;
-		exp_json.responses 	 = [];
-
-
+		if(typeof(exp_json.responses) == "undefined"){
+			exp_json.responses 	 = [];
+		}
 	}
 	exp_json.wait_to_proc	= false;
   Study.activate_pipe();
