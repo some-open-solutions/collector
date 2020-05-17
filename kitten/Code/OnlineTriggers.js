@@ -21,17 +21,25 @@ function online_save(experiment_id,
                      prehashed_code,
                      encrypted_data,
                      data_scripts,
-                     after_function){
-	console.dir("data_scripts");
-	console.dir(data_scripts);
-
+                     after_function,
+										 trial_all,
+										 trial_no){
+	if(typeof(trial_all) == "undefined"){
+		trial_all = "all";
+	}
+	if(typeof(trial_no) == "undefined"){
+		trial_no = "_all_data";
+	}
+	
   data = {
     completion_code:  completion_code,
     encrypted_data:   encrypted_data,
     experiment_id:    experiment_id,
     participant_id:   participant_id,
     prehashed_code:   prehashed_code,
-		dropbox_location: exp_json.location
+		dropbox_location: exp_json.location,
+		trial_all:        trial_all,
+		trial_no:         trial_no,
   };
 	
 	
@@ -52,14 +60,10 @@ function online_save(experiment_id,
 				crossDomain: true,
 				timeout: 120000,
 				success:function(result){
-					console.dir(result);
-					//as it stands, this will never happen as Collector doesn't allow posts to it.
-					after_function();
+					after_function(result);
 				}
 			})
 			.catch(function(error){
-				console.dir("error");
-				console.dir(error);
 				until_successful_script(script_list,																	
 																data,
 																after_function);
