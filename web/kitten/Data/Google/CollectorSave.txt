@@ -1,4 +1,4 @@
-function doGet(e){  
+function doGet(e){
   return saveData(e);
 }
 
@@ -17,20 +17,8 @@ String.prototype.hashCode = function() {
   return hash;
 };
 
-function pilot_saveData(){
-  saveData({
-    parameter:{
-      encrypted_data:"exemplar_data",
-      experiment_id:"beep",
-      participant_id:"bop",
-      completion_code:"brap",
-      prehashed_code:"burp",
-      emails:'["ant@gmail.com","bob@gmail.com"]'
-    }
-  });
-}
-
 function saveData(e) {
+  
   var response = e.parameter;
   
   var encrypted_data  = response.encrypted_data;  
@@ -38,43 +26,14 @@ function saveData(e) {
   var participant_id  = response.participant_id;
   var completion_code = response.completion_code;
   var prehashed_code  = response.prehashed_code;
-  var researchers     = response.researchers;
+  
   var hashed_code     = prehashed_code.hashCode();
   
-  // If you have multiple users saving to the same google drive space
-  if(typeof(response.emails) !== "undefined"){
-    console.log(response);
-    var emails = JSON.parse(response.emails);
-    var collector_folder  = getOrCreateSubFolder('Collector',"");
-    var data_folder       = getOrCreateSubFolder('Data','Collector');
-    
-    emails.forEach(function(email){
-      var email_folder      = getOrCreateSubFolder(email,'Data');
-      var experiment_folder = getOrCreateSubFolder(experiment_id,email);
-    
-      email_folder      = getOrCreateSubFolder(email,'Data');
-      experiment_folder = getOrCreateSubFolder(experiment_id,email);
-      
-      updateFile(email_folder,experiment_id + "-" + participant_id + "-" + completion_code + ".txt", encrypted_data);        //keeping this until the next line has worked reliably for a while
-      updateFile(experiment_folder, participant_id + "-" + completion_code + "-" + hashed_code + ".txt",encrypted_data);
-      
-    });
-  } else {
-    var collector_folder  = getOrCreateSubFolder('Collector',"");
-    var data_folder       = getOrCreateSubFolder('Data','Collector');
-    var experiment_folder = getOrCreateSubFolder(experiment_id,'Data');
-    
-    data_folder       = getOrCreateSubFolder('Data','Collector');
-    experiment_folder = getOrCreateSubFolder(experiment_id,'Data');
-    updateFile(data_folder,experiment_id + "-" + participant_id + "-" + completion_code + ".txt", encrypted_data);        //keeping this until the next line has worked reliably for a while
-    updateFile(experiment_folder, participant_id + "-" + completion_code + "-" + hashed_code + ".txt",encrypted_data);
-    
-  } 
-  return valid_return("success");
-}
-
-function valid_return(content){
-  return ContentService.createTextOutput(content).setMimeType(ContentService.MimeType.JAVASCRIPT); 
+  var data_folder       = getOrCreateSubFolder('Data','Collector');
+  var experiment_folder = getOrCreateSubFolder(experiment_id,'Data');
+  
+  updateFile(data_folder,experiment_id + "-" + participant_id + "-" + completion_code + ".txt", encrypted_data);  //keeping this until the next line has worked reliably for a while
+  updateFile(experiment_folder, participant_id + "-" + completion_code + "-" + hashed_code + ".txt",encrypted_data);
 }
 
 //solution by Craig on https://stackoverflow.com/questions/14965442/how-to-delete-overwrite-csv-file-using-google-apps-script

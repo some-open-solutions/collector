@@ -72,13 +72,15 @@ function initiate_actions(){
 					className: 'btn-primary',
 					callback: function(){
 						var new_name = $("#new_trialtype_name").val().toLowerCase();
-						content = "";
-            if(protected_name_check(new_name)){
-              if(valid_new_name(new_name)){
-                master_json.trialtypes.user_trialtypes[new_name] = content;
-                master_json.trialtypes.trialtype = new_name;
-                trialtypes_obj.save_trialtype(content,new_name,"new","code");
-                editor.textInput.getElement().onkeydown = "";
+            if(valid_trialtype(new_name)){
+              content = "";
+              if(protected_name_check(new_name)){
+                if(valid_new_name(new_name)){
+                  master_json.trialtypes.user_trialtypes[new_name] = content;
+                  master_json.trialtypes.trialtype = new_name;
+                  trialtypes_obj.save_trialtype(content,new_name,"new","code");
+                  editor.textInput.getElement().onkeydown = "";
+                }
               }
             }
 					}
@@ -88,29 +90,41 @@ function initiate_actions(){
 					className: 'btn-primary',
 					callback: function(){
 						var new_name = $("#new_trialtype_name").val().toLowerCase();
-            if(protected_name_check(new_name)){
-              if(valid_new_name(new_name)){
-                content = "";
-                master_json.trialtypes.user_trialtypes[new_name] = content;
-                master_json.trialtypes.trialtype = new_name;
-                trialtypes_obj.save_trialtype(content,new_name,"new","graphic");
-                $("#graphic_editor").show();
-                editor.setOption("readOnly",true);
-                editor.textInput.getElement().onkeydown = graphic_editor_obj.graphic_warning;
-                master_json.trialtypes.graphic.trialtypes[new_name] = {
-                  elements: {}
-                };
-                master_json.trialtypes.graphic.trialtypes[new_name].width = "600";
-                master_json.trialtypes.graphic.trialtypes[new_name].height = "600";
-                master_json.trialtypes.graphic.trialtypes[new_name]["background-color"] = "white";
-                master_json.trialtypes.graphic.trialtypes[new_name].mouse_visible = true;
-                master_json.trialtypes.graphic.trialtypes[new_name].keyboard = {
-                  valid_keys: '',
-                  end_press: true
-                };
-                master_json.trialtypes.trialtype = new_name;
-                graphic_editor_obj.update_main_settings();
-                graphic_editor_obj.clean_canvas();								
+            if(valid_trialtype(new_name)){
+              if(protected_name_check(new_name)){
+                if(valid_new_name(new_name)){
+                  content = "";
+                  master_json.trialtypes.user_trialtypes[new_name] = content;
+                  master_json.trialtypes.trialtype = new_name;
+                  trialtypes_obj.save_trialtype(content,new_name,"new","graphic");
+                  $("#graphic_editor").show();
+                  editor.setOption("readOnly",true);
+                  editor.textInput.getElement().onkeydown = graphic_editor_obj.graphic_warning;
+                  master_json.trialtypes.graphic.trialtypes[new_name] = {
+                    elements: {}
+                  };
+                  master_json.trialtypes.graphic.trialtypes[new_name].width = "600";
+                  master_json.trialtypes.graphic.trialtypes[new_name].height = "600";
+                  master_json.trialtypes.graphic.trialtypes[new_name]["background-color"] = "white";
+                  master_json.trialtypes.graphic.trialtypes[new_name].mouse_visible = true;
+                  master_json.trialtypes.graphic.trialtypes[new_name].keyboard = {
+                    valid_keys: '',
+                    end_press: true
+                  };
+                  master_json.trialtypes.trialtype = new_name;
+                  graphic_editor_obj.update_main_settings();
+                  graphic_editor_obj.clean_canvas();
+                  
+                  //graphic editor button should be on:
+                  $("#view_graphic_btn").removeClass("btn-outline-primary");
+                  $("#view_graphic_btn").addClass("btn-primary");
+                  $("#graphic_editor").show();
+                  
+                  //code editor should be on
+                  $("#view_code_btn").removeClass("btn-outline-primary");
+                  $("#view_code_btn").addClass("btn-primary");
+                  $("#ACE_editor").show();
+                }
               }
             }
 					}
@@ -166,7 +180,7 @@ function initiate_actions(){
 		//detect if it's a graphic trialtype
 		var trialtype = this.value;
 		if(typeof(master_json.trialtypes.graphic.trialtypes[trialtype]) !== "undefined"){
-			master_json.trialtypes.trialtype = trialtype;
+      master_json.trialtypes.trialtype = trialtype;
 			editor.textInput.getElement().onkeydown = graphic_editor_obj.graphic_warning;
 
 			//clear canvas
@@ -174,8 +188,21 @@ function initiate_actions(){
 			graphic_editor_obj.clean_canvas();
 
 			load_trialtype_boosts();
-
+      
+      $("#view_code_btn").removeClass("btn-outline-primary");
+			$("#view_code_btn").addClass("btn-primary");
+			$("#ACE_editor").show();
+      $("#view_graphic_btn").removeClass("btn-outline-primary");
+      $("#view_graphic_btn").addClass("btn-primary");
+      $("#graphic_editor").show();
+      
+      
 		} else {
+      editor.setOption("readOnly",false);
+      $("#graphic_editor").hide();
+      $("#view_graphic_btn").removeClass("btn-primary");
+      $("#view_graphic_btn").addClass("btn-outline-primary");
+      
 			editor.textInput.getElement().onkeydown = "";
 			$("#ACE_editor").show();
 			master_json.trialtypes.trialtype = trialtype;
