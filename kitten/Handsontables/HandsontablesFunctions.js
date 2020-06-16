@@ -17,6 +17,8 @@
  		
 		Kitten release (2019) author: Dr. Anthony Haffey (a.haffey@reading.ac.uk)		
 */
+var this_sheet;
+var this_selection;
 function isTrialTypeHeader(colHeader) {
 	var isTrialTypeCol = false;
   if (colHeader === 'trial type') isTrialTypeCol = true;
@@ -106,6 +108,8 @@ function updateDimensionsDelayed(hot, addWidth, addHeight) {
 		updateDimensions(hot);
 	}, 0);
 }
+
+
 function createHoT(container, data,sheet_name) {
 	var table = new Handsontable(container, {
 		data: data,
@@ -136,6 +140,22 @@ function createHoT(container, data,sheet_name) {
 						if(this.getDataAtCell(m,k)==1){
 							bootbox.alert("Warning v1: 1 does not refer to any row in the Stimuli sheet! The first row is row 2 (as row 1 is the header). Fix row "+(m+1)+" in your Procedure's Item column.");
 						}
+						if(this.getDataAtCell(m,k) !== null){
+							if(this.getDataAtCell(m,k).indexOf(":") !== -1){
+								this.setDataAtCell(m,k,this.getDataAtCell(m,k).replace(":"," to "));
+							}
+						}
+						/*
+						if(this.getDataAtCell(m,k).indexOf(":") !== -1){
+							
+							
+							// replace ":" with " to " but take care of spacing
+							this.setDataAtCell(m,k,this.getDataAtCell(m,k).replace(":"," to "));
+							
+							
+							
+						}
+						*/
 					}
 				}
 				
@@ -249,14 +269,102 @@ function createHoT(container, data,sheet_name) {
 		}                
 		return cellProperties;
 	},
-	cells: function(row, col, prop) {},                    
+	cells: function(row, col, prop) {},
 	wordWrap: false,
-	contextMenu: true,
+	contextMenu: {
+		items: {
+			"about": { // Own custom option
+        name: function () { // `name` can be a string or a function
+          return '<b>Edit cell</b>'; // Name can contain HTML
+        },
+        hidden: function () { // `hidden` can be a boolean or a function
+          // Hide the option when the first column was clicked
+          return this.getSelectedLast()[0] == 0; // `this` === hot3
+        },
+        callback: function(key, selection, clickEvent) { // Callback for specific option
+					this_sheet = this;
+					$('#cell_editor_div').fadeIn();
+					this_selection = selection;
+
+					cell_editor.setValue(this_sheet.getDataAtCell(selection.start.row, 
+																												selection.start.col),-1);
+													
+					
+					
+					//var cell_editor_width = parseFloat($("#cell_editor_div").css("width").replace("px",""));
+
+					if($("#help_content").is(":visible")){
+						var helper_width = parseFloat($("#help_content").css("width").replace("px",""));
+						
+						$("#cell_editor_div").animate({
+							"width": window.innerWidth - helper_width
+						}, 500,function(){
+							cell_editor.resize();
+						});
+					} else {
+						$("#cell_editor_div").animate({
+							"width": window.innerWidth
+						}, 500,function(){
+							cell_editor.resize();
+						});
+					}
+        }
+      },
+			"---------": {
+        name: '---------'
+      },
+			"row_below": {
+        name: 'Insert row below'
+      },			
+			"row_above": {
+        name: 'Insert row above'
+      },
+			"col_left": {
+        name: 'Insert column left'
+      },
+			"col_right": {
+        name: 'Insert column right'
+      },
+			"remove_row": {
+        name: 'Remove row'
+      },
+			"remove_col": {
+        name: 'Remove column'
+      },
+			"undo": {
+        name: 'Undo'
+      },
+			"redo": {
+        name: 'Redo'
+      },			
+			"make_read_only": {
+        name: 'Read only'
+      },
+			"alignment": {
+        name: 'Alignment'
+      },
+		}
+	},
 	rowHeaders: true,
 	});
 	return table;    
 }
 
+//solution by Jeffrey Harmon at https://stackoverflow.com/questions/1064089/inserting-a-text-where-cursor-is-using-javascript-jquery
+function insertAtCaret(areaId, text) {
+	var txtarea = document.getElementById(areaId);
+	var scrollPos = txtarea.scrollTop;
+	var caretPos = txtarea.selectionStart;
+
+	var front = (txtarea.value).substring(0, caretPos);
+	var back = (txtarea.value).substring(txtarea.selectionEnd, txtarea.value.length);
+	txtarea.value = front + text + back;
+	caretPos = caretPos + text.length;
+	txtarea.selectionStart = caretPos;
+	txtarea.selectionEnd = caretPos;
+	txtarea.focus();
+	txtarea.scrollTop = scrollPos;
+}
 /*
 $(window).resize(function() {
 	resizeTimer = window.setTimeout(function() {
