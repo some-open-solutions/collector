@@ -114,7 +114,7 @@ function load_default_surveys(){
     <div id="survey_HoT"></div>
   </div>
   <div class="tab-pane fade" id="pills-preview" role="tabpanel" aria-labelledby="pills-preview-tab">
-    <div id="survey_preview"></div>
+    <iframe id="survey_preview"></iframe>
   </div>
 </div>
 
@@ -271,11 +271,12 @@ function create_survey_HoT(this_survey){
 				}
 			}
 
-			var this_survey_name = $("#survey_select").val();
 			var this_survey = this.getData().filter(function(row){ return row.join("") !== '' });
+			console.dir("this_survey");
+			console.dir(this_survey);
+			//master_json.	
 		}
 	});
-	var this_survey_name = $("#survey_select").val();
   preview_survey(this_survey);
 }
 
@@ -295,7 +296,7 @@ function list_surveys(){
 	master_json.surveys.default_surveys = {};
 
 	master_json.surveys.user_surveys = typeof(master_json.surveys.user_surveys) == "undefined" ? {} : master_json.surveys.user_surveys;
-	master_json.surveys.default_surveys = clean_obj_keys(master_json.surveys.default_surveys);
+	master_json.surveys.default_surveys = Collector.clean_obj_keys(master_json.surveys.default_surveys);
 
 	var def_survey_list  = Object.keys(master_json.surveys.default_surveys).sort();
 	var user_survey_list = Object.keys(master_json.surveys.user_surveys).sort();
@@ -316,10 +317,18 @@ function list_surveys(){
 
 function preview_survey(this_survey){
   master_json.surveys.preview = true;
+	$("#survey_preview").css("width",window.innerWidth)
+	$("#survey_preview").css("height",window.innerHeight - 100)
   survey_template = $.get(collector_map["survey.html"], function(survey_template){
     survey_template = survey_template.replace('"{{survey}}"',
                                               JSON.stringify(this_survey));
-    $("#survey_preview").html(survey_template);
+		
+		doc = document.getElementById('survey_preview').contentWindow.document;                    
+		doc.open();                                                                                     
+		doc.write(libraries + survey_template); 																									// note that the difference here is the libraries
+		doc.close();          
+		
+    
   });
 }
 
@@ -350,12 +359,6 @@ function synch_surveys(){
 		});
 };
 
-function update_exp_survey(survey_name,survey_content){
-	if(typeof(exp_json.surveys) == "undefined"){
-		exp_json.surveys = {};
-	}
-	exp_json.surveys[survey_name] = survey_content;
-}
 
 
 //////////////////////
@@ -394,7 +397,8 @@ $("#new_survey_button").on("click",function(){
 						survey_name = survey_name.toLowerCase().replaceAll(".csv","") + ".csv";
 						if(typeof(master_json.surveys.user_surveys[survey_name] == "undefined")){
 							var survey_content = survey_HoT.getData();
-							master_json.surveys.user_surveys[survey_name] = survey_content;
+							master_json.surveys.user_surveys[survey_name] = JSON.parse(JSON.stringify(survey_content));
+							create_survey_HoT(master_json.surveys.user_surveys[survey_name]);
 							var survey_value   = "user|" + survey_name;
 							$("#survey_select").append($("<option>",{
 								text  : survey_name,
@@ -465,7 +469,9 @@ $("#rename_survey_btn").on("click",function(){
 });
 
 $("#save_survey_btn").on("click",function(){
-	if($("#survey_select").val() !== null){
+	console.dir('$("#survey_select").val()');
+	console.dir($("#survey_select").val());
+	if($("#survey_select").val() !== null & typeof(survey_HoT) !== "undefined"){
 		var survey_name     = $("#survey_select").val().split("|");
 		var survey_content  = Papa.unparse(survey_HoT.getData());
     dbx_obj.new_upload({
@@ -494,7 +500,8 @@ $("#save_survey_btn").on("click",function(){
 	}
 });
 
-$("#survey_select").on("change",function(){  
+$("#survey_select").on("change",function(){
+	$("#save_btn").click();
   var this_survey = $("#survey_select").val().split("|");
   if(this_survey[0] == "default"){
     $("#survey_select").removeClass("bg-light");
@@ -511,7 +518,7 @@ $("#survey_select").on("change",function(){
 		create_survey_HoT(master_json.surveys.user_surveys[this_survey[1]]);
     $("#spreadsheet_preview_tabs").show();
   } else {
-    bootbox.alert("It's not clear whether this is supposed to be a default or user_trialtype");
+    bootbox.alert("It's not clear whether this is supposed to be a default or user survey");
   }
 });
 
