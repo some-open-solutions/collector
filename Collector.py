@@ -1,4 +1,5 @@
 import eel
+import glob
 import io
 import json
 import pygit2
@@ -44,12 +45,23 @@ def repository_initialized():
         
         #eel.push_repository();
  '''       
-      
+
+@eel.expose
+def collector_live():
+		eel.collector_live()
 
 @eel.expose
 def delete_exp(exp_name):
-    os.remove("web/User/Experiments/" + exp_name + ".json")# delete file
-    shutil.rmtree("web/User/Experiments/" + exp_name)# delete folder
+    os.remove("web/User/Experiments/" + exp_name + ".json")      # delete file
+    shutil.rmtree("web/User/Experiments/" + exp_name)            # delete folder
+
+@eel.expose
+def delete_trialtype(trialtype_name):
+    os.remove("web/User/Trialtypes/" + trialtype_name + ".html") # delete file
+
+@eel.expose
+def list_trialtypes():
+		eel.list_python_trialtypes(glob.glob('web/User/Trialtypes/*.html')); #json.loads(
 
 @eel.expose
 def pull_collector(username,
@@ -341,7 +353,7 @@ def load_master_json():
         master_json = json.loads(master_json)
         eel.load_master_json(master_json)
 
-##to be deleted
+##to be deleted?
 @eel.expose
 def load_trialtype(trialtype):
     try:
