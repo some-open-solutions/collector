@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-    Kitten release (2019) author: Dr. Anthony Haffey (a.haffey@reading.ac.uk)
+    Kitten release (2019) author: Dr. Anthony Haffey (team@someopen.solutions)
 */
 function initiate_actions(){
   function protected_name_check(this_name){
@@ -58,7 +58,7 @@ function initiate_actions(){
     var dialog = bootbox.dialog({
       show: false,
       title: 'What would you like to name the new Trialtype?',
-      message:  "<p><input class='form-control' id='new_trialtype_name' autofocus='autofocus'>.</p>",
+      message:  "<p><input class='form-control' id='new_trialtype_name' autofocus='autofocus'></p>",
       buttons: {
         cancel: {
           label: "Cancel",
@@ -114,12 +114,12 @@ function initiate_actions(){
                   master_json.trialtypes.trialtype = new_name;
                   graphic_editor_obj.update_main_settings();
                   graphic_editor_obj.clean_canvas();
-                  
+
                   //graphic editor button should be on:
                   $("#view_graphic_btn").removeClass("btn-outline-primary");
                   $("#view_graphic_btn").addClass("btn-primary");
                   $("#graphic_editor").show();
-                  
+
                   //code editor should be on
                   $("#view_code_btn").removeClass("btn-outline-primary");
                   $("#view_code_btn").addClass("btn-primary");
@@ -140,7 +140,7 @@ function initiate_actions(){
 
   $("#rename_trial_type_button").on("click",function(){
     var trialtype_selected = $("#trial_type_select").val();
-    
+
     if(typeof(master_json.trialtypes.default_trialtypes[trialtype_selected]) !== "undefined"){
       bootbox.alert("You can't rename a default trialtype");
     } else {
@@ -153,9 +153,9 @@ function initiate_actions(){
           var original_name = $("#trial_type_select").val();
           master_json.trialtypes.user_trialtypes[new_name] = master_json.trialtypes.user_trialtypes[original_name];
           delete(master_json.trialtypes.user_trialtypes[original_name]);
-          
+
           $("#trial_type_select").attr("previousvalue","");
-          
+
           switch(Collector.detect_context()){
             case "github":
             case "github":
@@ -174,16 +174,31 @@ function initiate_actions(){
               .catch(function(error){
                 Collector.tests.report_error("problem moving an experiment", "problem moving an experiment");
               });
-            
+
             case "localhost":
-              eel.save_trialtype(new_name.replace(".html","") + ".html",
-                                 master_json.trialtypes.user_trialtypes[new_name]);
-              eel.delete_trialtype(original_name);
-              update_master_json();
-              list_trialtypes(function(){
-                $("#trial_type_select").val(new_name);
-                $("#trial_type_select").change();                
-              });
+              var response = Collector.electron.write_file(
+                "Trialtypes",
+                new_name.replace(".html","") + ".html",
+                master_json
+                  .trialtypes
+                  .user_trialtypes
+                  [new_name])
+              if(write_response == "success"){
+                Collector.electron.delete_trialtype(
+                    original_name,
+                    function(response){
+                      if(response == "success"){
+                        update_master_json();
+                        list_trialtypes(function(){
+                          $("#trial_type_select").val(new_name);
+                          $("#trial_type_select").change();
+                        });
+                      } else {
+                        bootbox.alert(response);
+                      }
+                    }
+                  )
+                }
               break;
           }
         }
@@ -202,16 +217,16 @@ function initiate_actions(){
     }
   });
   $("#trial_type_select").on("change",function(){
-    
+
     var old_trialtype = ($(this).attr('previousValue'));
-    
+
     if(old_trialtype !== "" &                                                               // not the first selected
       Object.keys(master_json.trialtypes.default_trialtypes).indexOf(old_trialtype) == -1){ // not a default trialtype
       trialtypes_obj.save_trialtype(master_json.trialtypes.user_trialtypes[old_trialtype],  // trialtype content
                                     old_trialtype,                                          // trialtype name
                                     "old");                                                 // not creating a new one
     }
-    
+
     $(this).attr('previousValue', this.value);
     //$("#save_btn").click();
     //detect if it's a graphic trialtype
@@ -225,28 +240,28 @@ function initiate_actions(){
       graphic_editor_obj.clean_canvas();
 
       load_trialtype_mods();
-        
+
       $("#view_code_btn").removeClass("btn-outline-primary");
       $("#view_code_btn").addClass("btn-primary");
       $("#ACE_editor").show();
       $("#view_graphic_btn").removeClass("btn-outline-primary");
       $("#view_graphic_btn").addClass("btn-primary");
       $("#graphic_editor").show();
-      
-      
+
+
     } else {
       editor.setOption("readOnly",false);
       $("#graphic_editor").hide();
       $("#view_graphic_btn").removeClass("btn-primary");
       $("#view_graphic_btn").addClass("btn-outline-primary");
-      
+
       editor.textInput.getElement().onkeydown = "";
       $("#ACE_editor").show();
       master_json.trialtypes.trialtype = trialtype;
-      
-      
+
+
       var user_default = this.children[this.selectedIndex].className;
-      
+
       $("#trial_type_select").removeClass("user_trialtype");
       $("#trial_type_select").removeClass("default_trialtype");
       if(user_default == "user_trialtype"){
@@ -254,21 +269,12 @@ function initiate_actions(){
       } else {
         $("#trial_type_select").addClass("default_trialtype");
       }
-      
+
       $("#default_user_trialtype_span").html(user_default);
       trialtypes_obj.load_trial_file(user_default);
-
-      if(typeof(master_json.trialtypes.user_trialtypes[master_json.trialtypes.trialtype]) !== "undefined"){
-        var sql_content = master_json.trialtypes.user_trialtypes[master_json.trialtypes.trialtype];
-        editor.setValue(sql_content);
-
-      } else if (typeof(master_json.trialtypes.default_trialtypes[master_json.trialtypes.trialtype]) !== "undefined"){
-        var sql_content = master_json.trialtypes.default_trialtypes[master_json.trialtypes.trialtype];
-        editor.setValue(sql_content);
-      }
     }
   });
-  
+
   $("#view_code_btn").on("click",function(){
     if($("#view_code_btn").hasClass("btn-primary")){  // then hide
       $("#view_code_btn").addClass("btn-outline-primary");

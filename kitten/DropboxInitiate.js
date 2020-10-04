@@ -63,10 +63,10 @@ function force_reauth_dbx(){
   dbx.setClientId(CLIENT_ID); // i think is necessary
 
 
-  
+
 
   var return_url = document.URL.split("#access_token")[0];
-  
+
   authUrl = dbx.getAuthenticationUrl(return_url);
   authUrl += "&force_reauthentication=true";
   document.getElementById('authlink').href = authUrl;
@@ -82,7 +82,7 @@ function isAuthenticated() { // If the user was just redirected from authenticat
 
 function check_authenticated(){
   if(isAuthenticated()){
-    
+
     /*
     * wait until $(".help_general") exists before loading welcome dialog
     */
@@ -123,7 +123,7 @@ function check_authenticated(){
         } else {
           dbx = new Dropbox({ accessToken: getAccessTokenFromUrl() });
         }
-        
+
         dbx.usersGetCurrentAccount()
         .then(function(account_info){
           $("#dropbox_account_email").html(account_info.email);
@@ -137,9 +137,9 @@ function check_authenticated(){
           console.dir("Dropbox not logged in yet");
           console.dir(error);
         });
-      }        
+      }
     },1000);
-    
+
   }	else {
     // Set the login anchors href using dbx.getAuthenticationUrl()
     dropbox_login();
@@ -230,7 +230,7 @@ function legacy_initiate_uber(){
 		});
 }
 function load_master_json(link_created){
-	$.get(link_created.url.replace("www.","dl."),function(returned_data){
+  $.get(link_created.url.replace("www.","dl."),function(returned_data){
     //moving what to do to the "done" outcome below:
 	})
   .done(function(returned_data){
@@ -241,11 +241,12 @@ function load_master_json(link_created){
       encrypt_obj.generate_keys();
     } else {
 			list_keys();
+      list_data_servers();
 		}
 		if(typeof(master_json.data) == "undefined"){
 			master_json.data = {};
 		}
-    
+
 
 
 		$("#startup_btn").fadeIn(500);
@@ -258,7 +259,7 @@ function load_master_json(link_created){
 			master_json.mods = {};
 		}
 		renderItems();
-		
+
   })
   .fail(function(){
     bootbox.alert("An attempt to load you resources from dropbox failed, trying again...");
@@ -295,7 +296,7 @@ function new_dropbox_account(dropbox_dialog){
                           },
                           "filesCreateFolder");
     dbx_obj.new_upload({path:"/master.json",
-                        contents:JSON.stringify(master_json),
+                        contents:JSON.stringify(master_json, null, 2),
                         mode:'overwrite'},
                         function(result){
                           dropbox_dialog.modal('hide');

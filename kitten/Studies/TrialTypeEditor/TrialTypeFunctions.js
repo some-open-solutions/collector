@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-		Kitten release (2019) author: Dr. Anthony Haffey (a.haffey@reading.ac.uk)
+		Kitten release (2019) author: Dr. Anthony Haffey (team@someopen.solutions)
 */
 $.ajaxSetup({ cache: false }); // prevents caching, which disrupts $.get calls
 
@@ -36,8 +36,8 @@ trialtypes_obj = {
 				trialtypes_obj.load_trial_file("default_trialtype");
 				Collector.custom_alert("Successfully deleted "+this_loc);
 				update_master_json();
-				
-				
+
+
 				switch(Collector.detect_context()){
 					case "github":																							// i.e. the user is online and using dropbox
 					case "gitpod":					                                    // i.e. the user is online and using dropbox
@@ -47,12 +47,21 @@ trialtypes_obj = {
 								//do nothing more
 							})
 							.catch(function(error){
-								Collector.tests.report_error("problem deleting a trialtype", 
-														 "problem deleting a trialtype");
+								Collector
+									.tests
+									.report_error("problem deleting a trialtype",
+														 	  "problem deleting a trialtype");
 							});
 						break;
-					case "localhost":																						// i.e. they can edit local files
-            eel.delete_trialtype(deleted_trialtype);									// delete the local trialtype file
+					case "localhost":
+						Collector
+							.electron
+							.delete_trialtype(deleted_trialtype,
+								function(response){
+									if(response !== "success"){
+										bootbox.alert(response);
+									}
+								});
 						break;
 				}
 
@@ -72,38 +81,37 @@ trialtypes_obj = {
 		} else {
 			$("#delete_trial_type_button").show();
 		}
-    
+
 		var trialtype = master_json.trialtypes.trialtype;
-    
-		if(typeof(eel) !== "undefined"){
-			eel.expose(python_trialtype);
-			function python_trialtype(content){
-				console.dir("content");
-				console.dir(content);
-				if(content == ""){
-					content = master_json.trialtypes[user_default+"s"][trialtype];
-				}
-				editor.setValue(content);
-			}
-		}
-		
+
     //python load if localhost
     switch(Collector.detect_context()){
       case "localhost":
         cleaned_trialtype = trialtype.toLowerCase()
                                      .replace(".html","") +
                                      ".html";
-        console.dir(cleaned_trialtype);
-        var content = eel.load_trialtype(cleaned_trialtype);
+				trialtype_content = Collector.electron.read_file(
+          "Trialtypes",
+					cleaned_trialtype
+        )
+				if(trialtype_content == ""){
+				  editor.setValue(
+            master_json.trialtypes
+						[user_default + "s"]
+            [trialtype]
+          );
+        } else {
+				  editor.setValue(trialtype_content);
+		    }
         break;
       default:
-        var content = master_json.trialtypes[user_default+"s"][trialtype];
-        editor.setValue(content);    
+				var content = master_json.trialtypes[user_default+"s"][trialtype];
+        editor.setValue(content);
         break;
     }
-    
-		
-	},	
+
+
+	},
 	save_trialtype:function(content,
                           name,
                           new_old,
@@ -140,8 +148,17 @@ trialtypes_obj = {
 			bootbox.alert("error: "+error.error+"<br> try saving again after waiting a little");
 		},
 		"filesUpload");
-		if(typeof(eel) !== "undefined"){
-			eel.save_trialtype(name.toLowerCase().replace(".html","") + ".html",content);
+		if(typeof(Collector.electron) !== "undefined"){
+			var write_response = Collector.electron.write_file(
+        "Trialtypes",
+				name
+					.toLowerCase()
+					.replace(".html","") + ".html",
+				content
+      )
+			if(write_response !== "success"){
+			     bootbox.alert(result);
+			}
 		}
 	},
 	synchTrialtypesFolder:function(){
@@ -167,39 +184,32 @@ trialtypes_obj = {
 }
 function list_trialtypes(to_do_after){
 	try{
-    if(typeof(eel) !== "undefined"){
-      eel.expose(list_python_trialtypes);
-      function list_python_trialtypes(python_trialtypes){
-        var python_user_trialtypes = [];
-        python_trialtypes.forEach(function(python_trialtype){
-          var split_trialtype = python_trialtype.replaceAll("\\","/")
-                                                .split("/");
-          var this_trialtype = split_trialtype[split_trialtype.length - 1];
-              this_trialtype = this_trialtype.toLowerCase()
-                                             .replace(".html","");
-          
-          if(Object.keys(master_json.trialtypes.user_trialtypes).indexOf(this_trialtype) == -1){
-            python_user_trialtypes.push(this_trialtype);
-            $.get("../User/Trialtypes/" + this_trialtype + ".html", function(trialtype_content){
-              master_json.trialtypes.user_trialtypes[this_trialtype] = trialtype_content;
-            });
-          }			
-        });
-        python_user_trialtypes.forEach(function(this_trialtype){
-          $("#trial_type_select").append("<option class='user_trialtype'>" + this_trialtype + "</option>");
-        });
-        if(typeof(to_do_after) !== "undefined"){
-          to_do_after();
-        }
-      }
-    }
-    
+		if(typeof(Collector.electron) !== "undefined"){
+      var trialtypes = Collector.electron.list_trialtypes();
+          trialtypes = JSON.parse(trialtypes);
+          trialtypes = trialtypes.map(item => item.replaceAll(".html",""));
+          trialtypes.forEach(function(trialtype){
+            if(Object.keys(master_json.trialtypes.user_trialtypes).indexOf(trialtype) == -1){
+              master_json
+                .trialtypes
+                .user_trialtypes
+                [trialtype] = Collector
+                                .electron
+                                .read_file("Trialtypes",
+                                           trialtype + ".html");
+            }
+          });
+		}
+
+
+
+
     function process_returned(returned_data){
-      
+
       $("#trial_type_select").empty();
       $("#trial_type_select").append("<option disabled>Select a trialtype</option>");
       $("#trial_type_select").val("Select a trialtype");
-      
+
       default_trialtypes = JSON.parse(returned_data);
       user_trialtypes 	 = master_json.trialtypes.user_trialtypes;
 
@@ -217,23 +227,21 @@ function list_trialtypes(to_do_after){
         $("#trial_type_select").append("<option class='user_trialtype'>"+element+"</option>");
       });
       trialtypes_obj.synchTrialtypesFolder();
-      
-      
+
+
       switch(Collector.detect_context()){
-        case "server":      
+        case "server":
         case "gitpod":
         case "github":
+				case "localhost":
           // currently do nothing
           if(typeof(to_do_after) !== "undefined"){
             to_do_after();
           }
           break;
-        case "localhost":
-          eel.list_trialtypes();
-          break;
       }
     }
-      
+
     function get_default_trialtypes(list){
       if(list.length > 0){
         var item = list.pop();
@@ -250,8 +258,8 @@ function list_trialtypes(to_do_after){
 
     default_trialtypes = {};
     get_default_trialtypes(default_list);
-    
-    
+
+
     Collector.tests.pass("trialtypes",
                          "list");
   } catch(error){
@@ -268,7 +276,7 @@ function valid_trialtype(this_name){
        this_name == "end_checks_experiment"){
          bootbox.alert("<b>" + this_name + "</b>" +
 					"is protected, please choose another name");
-      return false;   
+      return false;
     } else {
       return this_name;
     }
