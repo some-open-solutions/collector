@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-		Kitten release (2019) author: Dr. Anthony Haffey (a.haffey@reading.ac.uk)
+		Kitten release (2019) author: Dr. Anthony Haffey (team@someopen.solutions)
 */
 function check_trialtypes_in_proc(procedure,post_trialtype){
 	var experiment 		= $("#experiment_list").val();
@@ -122,19 +122,21 @@ function list_studies(){
       select_html += "</select>";
       $("#experiments").html(select_html);
       $("#experiment_list").on("change",function(){
-        if(first_load == false){
-          master_json.exp_mgmt.any_loaded = true;
-          $("#save_btn").click();
+        if(typeof(first_load) == "undefined" ||
+				   first_load	== false){
+           $("#save_btn").click();
         } else {
           remove_from_list("Select a dropbox experiment");
           first_load = false;
-        }			
+        }
+
         exp_json = master_json.exp_mgmt.experiments[this.value];
         clean_conditions();
         $("#dropbox_inputs").show();
         update_handsontables();
         update_server_table();
         $("#save_btn").click();
+
       });
     }
     //do longer synch with dropbox if the user is using dropbox
@@ -179,20 +181,19 @@ function new_experiment(experiment){
 
     //create it first in dropbox, THEN update table with location
 		master_json.exp_mgmt.experiments[experiment] = new_experiment_data;
-    
+
 		var this_path = "/Experiments/" + experiment + ".json";
 
     function update_experiment_list(experiment){
-      $('#experiment_list').append($('<option>', {
+			$('#experiment_list').append($('<option>', {
         text : experiment
       }));
       $("#experiment_list").val(experiment);
       update_handsontables();
       update_master_json();
-
-      $("#save_btn").click();
+			$("#save_btn").click();
     }
-    if(dropbox_check()){
+		if(dropbox_check()){
       dbx_obj.new_upload({path:this_path,contents:JSON.stringify(new_experiment_data)},function(result){
         dbx.sharingCreateSharedLink({path:this_path})
           .then(function(returned_link){
@@ -211,10 +212,13 @@ function new_experiment(experiment){
         Collector.tests.report_error("new_experiment trying to upload template to dropbox","new_experiment trying to upload template to dropbox");
       },
       "filesUpload");
+
     } else {
-      update_experiment_list(experiment);
+
+			update_experiment_list(experiment);
     }
 	}
+
 }
 function remove_from_list(experiment){
 	var x = document.getElementById("experiment_list");
@@ -238,7 +242,7 @@ function renderItems() {
 	list_graphics();
   list_servers();
 	initiate_actions();
-  autoload_mods();  
+  autoload_mods();
 }
 function stim_proc_defaults(proc_values,stim_values){
 	var this_exp   = master_json.exp_mgmt.experiments[$("#experiment_list").val()];
@@ -264,7 +268,6 @@ function stim_proc_selection(stim_proc,sheet_selected){
 function synch_experiment(entry_name){
 	dbx.sharingCreateSharedLink({path:"/experiments/" + entry_name + ".json"})
 		.then(function(result){
-			console.dir(result);
 			$.get(result.url.replace("www.","dl."), function(exp_json){
 				master_json.exp_mgmt.experiments[entry_name] = JSON.parse(exp_json);
 			});
@@ -273,7 +276,7 @@ function synch_experiment(entry_name){
 			Collector.tests.report_error("problem synching the experiment","problem synching the experiment");
 		});
 }
-function update_dropdown_lists(){	
+function update_dropdown_lists(){
 	var this_exp   = master_json.exp_mgmt.experiments[$("#experiment_list").val()];
 	var stim_values = [];
 	var proc_values = [];
@@ -307,48 +310,90 @@ function update_handsontables(){
   stim_file = Object.keys(this_exp.all_stims)[0];
   proc_file = Object.keys(this_exp.all_procs)[0];
 
+
+	function load_spreadsheet(experiment,
+														sheet_type,
+														sheet_name,
+													  exp_mgmt_location,
+														sheet_content){
+		if(sheet_content.split(",").length > 1){
+			createExpEditorHoT(Papa.parse(sheet_content).data,
+												 sheet_type,
+												 sheet_name);
+		} else {
+			var experiment = sheet_content; //focusing on loading from master_json
+			var sheet_json = master_json.exp_mgmt
+																	.experiments[experiment]
+																	[exp_mgmt_location];
+			createExpEditorHoT(sheet_json,
+												 sheet_type,
+												 sheet_name);
+		}
+	}
+
   switch(Collector.detect_context()){
       case "localhost":
-        eel.expose(receive_sheet);
-        function receive_sheet(sheet_content,
-                               sheet_type,
-                               sheet_name){
-          if(sheet_content.split(",").length > 1){
-            createExpEditorHoT(Papa.parse(sheet_content).data,
-                               sheet_type,
-                               sheet_name);
-          } else {
-            var experiment = sheet_content; //focusing on loading from master_json
-            if(sheet_type == "Conditions"){
-              var sheet_json = master_json.exp_mgmt
-                                          .experiments[experiment]
-                                          .cond_array;
-            } else if(sheet_type == "Stimuli") {
-              var sheet_json = master_json.exp_mgmt
-                                          .experiments[experiment]
-                                          .all_stims[sheet_name];
-            } else if(sheet_type == "Procedure"){
-              var sheet_json = master_json.exp_mgmt
-                                          .experiments[experiment]
-                                          .all_procs[sheet_name];
-            } else {
-              bootbox.alert("Problem loading experiment - not sure what type of sheet <b>" + sheet_type + "</b> is.");
-            }
-            createExpEditorHoT(sheet_json,
-                               sheet_type,
-                               sheet_name);
-          }
-        }
-        //check each sheet exists first
-        eel.request_sheet($("#experiment_list").val(),
-                          "Conditions",
-                          "conditions.csv");
-        eel.request_sheet($("#experiment_list").val(),
-                          "Stimuli",
-                          stim_file);
-        eel.request_sheet($("#experiment_list").val(),
-                          "Procedure",
-                          proc_file);
+				var conditions_sheet = Collector.electron.read_file(
+          "Experiments/"  + $("#experiment_list").val(),
+				  "conditions.csv"
+        )
+
+			 if(conditions_sheet == ""){
+				 conditions_sheet = Papa.unparse(
+           master_json
+             .exp_mgmt
+             .experiments
+             [$("#experiment_list").val()]
+             .cond_array
+         );
+			 }
+       load_spreadsheet($("#experiment_list").val(),
+											 "Conditions",
+											 "conditions.csv",
+											 "cond_array",
+										   conditions_sheet);
+
+	    var stim_sheet = Collector.electron.read_file(
+        "Experiments/" + $("#experiment_list").val(),
+				stim_file
+      );
+		  if(stim_sheet == ""){
+				 stim_sheet = Papa.unparse(
+           master_json
+             .exp_mgmt
+             .experiments
+             [$("#experiment_list").val()]
+             .all_stims[stim_file]
+         );
+       }
+       load_spreadsheet(
+         $("#experiment_list").val(),
+				 "Stimuli",
+				 stim_file,
+				 "all_stims[sheet_name]",
+				 stim_sheet
+       );
+
+       var proc_sheet = Collector.electron.read_file(
+         "Experiments/"  + $("#experiment_list").val(),
+       	 proc_file
+       );
+			 if(proc_sheet == ""){
+				 proc_sheet = Papa.unparse(
+           master_json
+            .exp_mgmt
+            .experiments
+            [$("#experiment_list").val()]
+            .all_procs[proc_file]);
+			 }
+       load_spreadsheet(
+         $("#experiment_list").val(),
+         "Procedure",
+         proc_file,
+         "all_procs[sheet_name]",
+				 proc_sheet
+       );
+       break;
       case "github":
       default:
       	createExpEditorHoT(this_exp.all_stims[stim_file], "Stimuli",   stim_file);
@@ -357,14 +402,11 @@ function update_handsontables(){
         break;
 
   }
-
-
-	master_json.exp_mgmt.any_loaded = true;
 	$("#dropbox_inputs").show();
 }
 function update_master_json(){
 	dbx_obj.new_upload({path:"/master.json",
-                      contents:JSON.stringify(master_json),
+                      contents:JSON.stringify(master_json,null,2),
                       mode:'overwrite'},
                       function(result){
 
@@ -373,56 +415,10 @@ function update_master_json(){
 	},
 	"filesUpload");
 };
-function update_this_setting(setting){
-  new_val = $("#online-" + setting.replaceAll(".","-")).val();
-  eval( "master_json." + setting + " = " + "'" + new_val + "'");
-  eel.save_master_json(master_json);
-}
-function update_trial_json(){
-	// list all the trialtypes currently existing;
-	var this_exp   		= master_json.exp_mgmt.experiments[$("#experiment_list").val()];
-	var proc_trialtypes = {};
-	var proc_keys		= Object.keys(this_exp.all_procs);
 
-	//list all columns with trialtype in them
-	var post_trialtypes = this_exp.all_procs["Procedure_1"][0].filter(function(key){
-		return /trial type/.test(key);
-	});
-	proc_keys.forEach(function(procedure){
-		post_trialtypes.forEach(function(trialtype){
-			check_trialtypes_in_proc(procedure,trialtype.toLowerCase());
-		});
-	});
-}
-function update_spreadsheet_selection() {
-	var current_experiment = $("#experiment_name").val();
 
-	var exp_data = experiment_files[current_experiment];
-
-	var select_html = '<option class="condOption" value="Conditions.csv">Conditions</option>';
-
-	select_html += '<optgroup label="Stimuli" class="stimOptions">';
-
-	for (var i=0; i<exp_data['Stimuli'].length; ++i) {
-		var file = exp_data['Stimuli'][i];
-		select_html += '<option value="Stimuli/' + file + '">' + file + '</option>';
-	}
-
-	select_html += '</optgroup>';
-
-	select_html += '<optgroup label="Procedures" class="procOptions">';
-
-	for (var i=0; i<exp_data['Procedures'].length; ++i) {
-		var file = exp_data['Procedures'][i];
-		select_html += '<option value="Procedure/' + file + '">' + file + '</option>';
-	}
-
-	select_html += '</optgroup>';
-
-	//$("#spreadsheet_selection").html(select_html);
-}
 function upload_exp_contents(these_contents,this_filename){
-	parsed_contents  = JSON.parse(these_contents)
+  parsed_contents  = JSON.parse(these_contents)
 	cleaned_filename = this_filename.toLowerCase().replace(".json","");
 
 	// note that this is a local function. right?
@@ -431,7 +427,7 @@ function upload_exp_contents(these_contents,this_filename){
 		list_studies();
     upload_trialtypes(this_content);
     upload_surveys(this_content);
-    list_surveys();		
+    list_surveys();
 	}
   function upload_surveys(this_content){
     function unique_survey(suggested_name,survey_content){
