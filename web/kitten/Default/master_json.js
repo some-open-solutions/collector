@@ -1,4 +1,4 @@
-{
+default_master_json = {
   "mods":    {},
   "exp_mgmt":  {
     "any_loaded": 	 		false,
@@ -10,6 +10,11 @@
     "pipe_position": 	 	0,
     "pipe_direction":  	"",
     "versions" :		 		[]
+  },
+  "github": {
+    "organisation"  : "",
+    "repository"    : "",
+    "organisations" : {}
   },
   "surveys" : {},
   "trialtypes":  {
