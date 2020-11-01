@@ -161,6 +161,7 @@ $("#rename_exp_btn").on("click",function(){
         case "localhost":
 					Collector
 						.electron
+            .fs
 						.write_experiment(
 							new_name,
   						JSON.stringify(
@@ -347,15 +348,15 @@ $("#run_btn").on("click",function(){
 					}
 				});
 			}
-      if(master_json.github.organisation !== ""){
-        var organisation = master_json.github.organisation;
+      if(github_json.organization !== ""){
+        var organization = github_json.organization;
       } else {
-        var organisation = master_json.github.username;
+        var organization = github_json.username;
       }
       var github_url =  "https://" +
-                        organisation +
+                        organization +
                         ".github.io/" +
-                        master_json.github.repository + "/" +
+                        github_json.repository + "/" +
                         Collector.version +
                         "/" +  "RunStudy.html?platform=github&" +
       															"location=" + $("#experiment_list").val() + "&" +
@@ -402,6 +403,7 @@ $("#run_btn").on("click",function(){
 $("#save_btn").attr("previousValue","");
 
 $("#save_btn").on("click", function(){
+
   function process_parsed_procs(this_exp){
     Object.keys(this_exp.parsed_procs).forEach(function(proc_name){
       this_proc = this_exp.parsed_procs[proc_name];
@@ -529,7 +531,8 @@ $("#save_btn").on("click", function(){
     /*
     * Only try to save an experiment if there is a valid experiment loaded
     */
-    if(typeof(experiment) !== "undefined"){
+    if(typeof(experiment) !== "undefined" &
+       experiment !== null){
       var this_exp 	 = master_json.exp_mgmt.experiments[experiment];
 
       if(typeof(this_exp) !== "undefined"){
@@ -572,6 +575,7 @@ $("#save_btn").on("click", function(){
   					this_exp = JSON.stringify(this_exp, null, 2);
   					Collector
   						.electron
+              .fs
   						.write_experiment(
   							experiment,
   							this_exp,
@@ -582,7 +586,9 @@ $("#save_btn").on("click", function(){
   							}
   						)
               update_master_json();
-              var write_response = Collector.electron.write_file(
+
+              var git_json_response = Collector.electron.git.save_master();
+              var write_response = Collector.electron.fs.write_file(
                 "",
       					"master.json",
       					JSON.stringify(master_json, null, 2));
@@ -621,16 +627,33 @@ $("#save_btn").on("click", function(){
             break;
         }
       }
+    } else {
+      switch(Collector.detect_context()){
+        case "localhost":
+          var git_json_response = Collector.electron.git.save_master();
+          var write_response = Collector.electron.fs.write_file(
+            "",
+            "master.json",
+            JSON.stringify(master_json, null, 2));
+          if(write_response !== "success"){
+            bootbox.alert(response);
+          } else {
+            Collector.custom_alert(
+              "Succesfully saved master_json"
+            )
+          }
+          var git_json_response = Collector.electron.git.save_master();
+      };
     }
 
     Collector.tests.pass("studies",
                          "save_at_start");
+
   }  catch (error){
     Collector.tests.fail("studies",
                          "save_at_start",
                          error);
   }
-
 });
 
 $("#stim_select").on("change",function(){
