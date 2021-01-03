@@ -1,34 +1,72 @@
 /*
+* Detect if a mac device
+*/
+const fs   = require('fs-extra');
+
+var root_dir = require("os").homedir() + "/Documents/Collector/";
+
+//make sure there is a Collector folder in documents
+if(!fs.existsSync(root_dir)){
+  fs.mkdirSync(root_dir);
+}
+
+// make User folder if it doesn't exist yet
+if(!fs.existsSync(root_dir + "/User")){
+  fs.mkdirSync(root_dir + "/User");
+}
+
+/*
 * Github management
 */
-const fs   = require('fs-extra')
 const ipc  = require('electron').ipcMain;
-
 const { Octokit }     = require("@octokit/rest");
 const simpleGit       = require('simple-git');
-const git             = simpleGit();
+
+/*
+* var git = simpleGit(); has to be called in individual functions to make sure it's fresh rather than has carrying over information from previous calls
+*/
 var commandExistsSync = require('command-exists').sync;
-
-const git_token_location = "repositories/Private/github_token.txt";
-
+const git_token_location = root_dir + "repositories/Private/github_token.txt";
 
 /*
 * In alphabetical order
 */
 
 ipc.on('git_add_changes', (event, args) => {
-  //copy folder from User folder into repository
 
+  /*
+  * Update the cat folder using the local folder if in powershell/npm mode
+  */
+  if(fs.existsSync(
+    "cat"
+  )){
+    fs.copySync(
+      "cat",
+      root_dir +
+      "repositories"         + "/" +
+        args["organization"] + "/" +
+        args["repository"]   + "/" +
+        "web"                + "/" +
+        "cat",
+      {
+        recursive: true
+      }
+    )
+  }
+
+  //copy folder from User folder into repository
   var baseline_time = (new Date()).getTime();
   console.log("baseline_time = " + baseline_time);
 
   fs.copySync(
+    root_dir +
     "User",
+    root_dir +
     "repositories"        + "/" +
       args["organization"] + "/" +
       args["repository"]   + "/" +
       "web"               + "/" +
-    "User",
+      "User",
     {
       recursive:true
     }
@@ -60,17 +98,19 @@ ipc.on('git_add_repo', (event,args) => {
     /*
     * Then clone the repository
     */
+    var git = simpleGit();
     git.clone(
       "https://github.com" + "/" +
         args["organization"] + "/" +
         args["repository"],
+      root_dir +
       "repositories"         + "/" +
         args["organization"] + "/" +
         args["repository"]
     ).then(function(result){
       event.returnValue = "success"
     }).catch(function(error){
-      event.returnValue = "failed to clone your existing repository onto your computer"
+      event.returnValue = "error" + error;
     });
   }).catch(function(error){
     console.log("result of repository not existing online:");
@@ -86,17 +126,26 @@ ipc.on('git_add_repo', (event,args) => {
       /*
       * Create repository locally
       */
+      console.log("args:");
+      console.log(args);
+      console.log("git:");
+      console.log(git);
+      var git = simpleGit();
       git.clone(
         "https://github.com/some-open-solutions/collector",
+        root_dir +
         "repositories"         + "/" +
           args["organization"] + "/" +
           args["repository"]
       ).then(function(result){
         console.log("cloning worked");
+        console.log("result:");
+        console.log(result);
         /*
         * Remove the local .git folder to prevent synching with some-open-solutions version
         */
         fs.rmdirSync(
+          root_dir +
           "repositories"        + "/" +
             args["organization"] + "/" +
             args["repository"]   + "/" +
@@ -122,11 +171,11 @@ ipc.on('git_add_token', (event,args) => {
   /*
   * Make sure the required folders exist
   */
-  if(!fs.existsSync("repositories")){
-    fs.mkdirSync("repositories");
+  if(!fs.existsSync(root_dir + "repositories")){
+    fs.mkdirSync(root_dir + "repositories");
   }
-  if(!fs.existsSync("repositories/Private")){
-    fs.mkdirSync("repositories/Private");
+  if(!fs.existsSync(root_dir + "repositories/Private")){
+    fs.mkdirSync(root_dir + "repositories/Private");
   }
 
   try{
@@ -144,6 +193,7 @@ ipc.on('git_add_token', (event,args) => {
 ipc.on('git_delete_org', (event,args) => {
   try{
     fs.rmdirSync(
+      root_dir +
       "repositories"         + "/" +
         args["organization"],
       {
@@ -162,6 +212,7 @@ ipc.on('git_delete_repo', (event,args) => {
 
   try{
     fs.rmdirSync(
+      root_dir +
       "repositories"         + "/" +
         args["organization"] + "/" +
         args["repository"],
@@ -175,26 +226,48 @@ ipc.on('git_delete_repo', (event,args) => {
   }
 });
 
+/*
+* Expanding git_exists to check if there is a valid email
+*/
 ipc.on('git_exists', (event,args) => {
   if(commandExistsSync('git')){
-    event.returnValue = "success"
+    var git = simpleGit();
+    git.listConfig().then(function(result){
+      //console.log(result);
+
+      /*
+      * Check all configs for the relevant values
+      */
+      var user_email_valid = "false"
+
+      Object.keys(result.values).forEach(function(item){
+        if(typeof(result.values[item]["user.email"]) !== "undefined" && result.values[item]["user.email"] !== ""){
+          user_email_valid = "true";
+        }
+      });
+      event.returnValue = user_email_valid;
+    }).catch(function(error){
+      event.returnValue = error;
+    });
   } else {
     event.returnValue = "Git is not yet installed. Please go to https://git-scm.com/ to download and install it so that you can do online research.";
   }
 });
 
 ipc.on('git_load_master', (event,args) => {
-  if(!fs.existsSync("repositories")){
-    fs.mkdirSync("repositories")
+  if(!fs.existsSync(root_dir + "repositories")){
+    fs.mkdirSync(root_dir + "repositories")
   }
-  if(!fs.existsSync("repositories/github.json")){
+  if(!fs.existsSync(root_dir + "repositories/github.json")){
     fs.writeFileSync(
+      root_dir +
       "repositories/github.json",
       "{}",
       'utf8'
     );
   }
   var content = fs.readFileSync(
+    root_dir +
     "repositories/github.json",
     'utf8'
   );
@@ -202,6 +275,7 @@ ipc.on('git_load_master', (event,args) => {
 });
 
 ipc.on('git_pages', (event,args) => {
+
   /*
   * confirm authentication file exists
   */
@@ -209,27 +283,48 @@ ipc.on('git_pages', (event,args) => {
     git_token_location,
     'utf8'
   );
-  try{
-    const octokit = new Octokit({
-      auth: auth_token,
-    }).repos.createPagesSite({
-      "owner":          args["organization"],
-      "repo":           args["repository"]
-    })
+
+  /*
+  * Check if the repository already is a github page
+  */
+  const octokit = new Octokit({
+    auth: auth_token,
+  }).repos.getPages({
+    "owner":          args["organization"],
+    "repo":           args["repository"]
+  }).then(function(results){
     event.returnValue = "success";
-  } catch(error){
-    console.log("HERE BE THE ERROR");
-    event.returnValue = "error: " + error;
-  }
+  }).catch(function(error){
+    try{
+      const octokit = new Octokit({
+        auth: auth_token,
+      }).repos.createPagesSite({
+        "owner":          args["organization"],
+        "repo":           args["repository"],
+        "source": {
+          "branch" : "master",
+          "path"   : "/"
+        }
+      }).then(function(result){
+        event.returnValue = "success";
+      }).catch(function(error){
+        event.returnValue = "error: " + error;
+      });
+    } catch(error){
+      console.log("HERE BE THE ERROR");
+      event.returnValue = "error: " + error;
+    }
+  });
 });
 
 ipc.on('git_pull', (event,args) => {
-  if(!fs.existsSync("repositories")){
-    fs.mkdirSync("repositories");
+  if(!fs.existsSync(root_dir + "repositories")){
+    fs.mkdirSync(root_dir + "repositories");
   }
 
-  if(!fs.existsSync("repositories" + "/" + args["organization"])){
+  if(!fs.existsSync(root_dir + "repositories" + "/" + args["organization"])){
     fs.mkdirSync(
+      root_dir +
       "repositories"      + "/" +
       args["organization"]
     )
@@ -239,6 +334,7 @@ ipc.on('git_pull', (event,args) => {
   */
   if(
     !fs.existsSync(
+      root_dir +
       "repositories"      + "/" +
       args["organization"] + "/" +
       args["repository"]
@@ -246,22 +342,26 @@ ipc.on('git_pull', (event,args) => {
   ){
     console.log("Repository doesn't exist locally, so cloning");
     //cloning
+    var git = simpleGit();
     git.clone(
       "https://github.com"   + "/" +
         args["organization"] + "/" +
         args["repository"],
-      "repositories"         + "/" +
+      root_dir +
+        "repositories"       + "/" +
         args["organization"] + "/" +
         args["repository"]
     )
     .then(function(error){
       //copy and replace the "User" folder
       fs.copySync(
+        root_dir +
         "repositories"         + "/" +
           args["organization"] + "/" +
           args["repository"]   + "/" +
           "web"                + "/" +
           "User",
+        root_dir +
         "User"
       );
       event.returnValue = "success";
@@ -287,7 +387,9 @@ ipc.on('git_pull', (event,args) => {
     console.log("remote = " + remote);
 
     try{
+      var git = simpleGit();
       git.cwd(
+        root_dir +
         "repositories"      + "/" +
         args["organization"] + "/" +
         args["repository"]
@@ -295,21 +397,34 @@ ipc.on('git_pull', (event,args) => {
         remote,
         'master'
       ).then(function(result){
-        console.log("response to pull request");
-        console.log(result);
-        //copy and replace the "User" folder
+
+        /*
+        * delete User folder before copying over it
+        */
+        fs.rmdirSync(
+          root_dir +
+          "User", {
+            recursive: true
+          }
+        )
 
         try{
           fs.copySync(
+            root_dir +
             "repositories"         + "/" +
               args["organization"] + "/" +
               args["repository"]   + "/" +
               "web"                + "/" +
               "User",
-            "User"
+            root_dir +
+            "User", {
+              recursive: true
+            }
           );
+          console.log("succesfully copied over the local user folder using the updated repository");
           event.returnValue = "success";
         } catch(error){
+          console.log("failed to copy over the local user folder using the updated repository");
           event.returnValue = "failed to switch to the new repository - are you sure this is a valid Collector repository (e.g. has a user folder)";
         }
 
@@ -351,7 +466,9 @@ ipc.on('git_push', (event,args) => {
                   "@github.com"        + "/" +
                   args["organization"] + "/" +
                   args["repository"]   + ".git";
+  var git = simpleGit();
   git.cwd(
+    root_dir +
     "repositories"       + "/" +
     args["organization"] + "/" +
     args["repository"]
@@ -373,11 +490,34 @@ ipc.on('git_push', (event,args) => {
 
 ipc.on('git_save_master', (event,args) => {
   fs.writeFileSync(
+    root_dir +
     "repositories/github.json",
     args["git_master_json"],
     'utf8'
   );
   event.returnValue = "success";
+});
+
+ipc.on('git_set_email', (event, args) => {
+  console.log(args["email"]);
+  var git = simpleGit();
+      git.addConfig("user.email", args["email"]);
+  event.returnValue = "success";
+});
+
+ipc.on('git_status', (event, args) =>{
+  var git = simpleGit();
+
+  git.cwd(
+    root_dir +
+    "repositories"      + "/" +
+    args["organization"] + "/" +
+    args["repository"]
+  ).fetch().status().then(function(result){
+    event.returnValue = result.behind;
+  }).catch(function(error){
+    event.returnValue = error;
+  });
 });
 
 ipc.on('git_switch_repo', (event, args) => {
@@ -387,6 +527,7 @@ ipc.on('git_switch_repo', (event, args) => {
     */
     if(
       !fs.existsSync(
+        root_dir +
         "repositories"         + "/" +
           args["organization"] + "/" +
           args["repository"]   + "/" +
@@ -395,6 +536,7 @@ ipc.on('git_switch_repo', (event, args) => {
       )
     ){
       fs.mkdirSync(
+        root_dir +
         "repositories"         + "/" +
           args["organization"] + "/" +
           args["repository"]   + "/" +
@@ -403,30 +545,40 @@ ipc.on('git_switch_repo', (event, args) => {
       )
     }
     if(typeof(args["old_repo"]) !== "undefined"){
-      fs.copySync(
-        "User",
-        "repositories"    + "/" +
-          args["old_org"] + "/" +
-          args["old_rep"] + "/" +
-          "web"           + "/" +
-          "User"
-      );
+      try{
+        fs.copySync(
+          root_dir +
+          "User",
+          root_dir +
+          "repositories"    + "/" +
+            args["old_org"] + "/" +
+            args["old_rep"] + "/" +
+            "web"           + "/" +
+            "User"
+        );
+      } catch(error){
+        // hopefully can just skip this if an error occurs
+        console.log("error = " + error);
+      }
     }
 
     /*
     * Copy the selected repo
     */
     fs.rmdirSync(
+      root_dir +
       "User", {
         recursive: true
       }
     )
     fs.copySync(
+      root_dir +
       "repositories"         + "/" +
         args["organization"] + "/" +
         args["repository"]   + "/" +
         "web"                + "/" +
         "User",
+      root_dir +
       "User", {
         recursive: true
       }
@@ -440,7 +592,7 @@ ipc.on('git_switch_repo', (event, args) => {
 ipc.on('git_token_exists', (event,args) => {
   if (
     fs.existsSync(
-      "repositories/Private/github_token.txt"
+      root_dir + "repositories/Private/github_token.txt"
     )
   ) {
     event.returnValue =  "success";
@@ -453,12 +605,13 @@ ipc.on('git_valid_org', (event, args) => {
   /*
   * Make sure the relevant folders are ready
   */
-  if(!fs.existsSync("repositories")){
-    fs.mkdirSync("repositories");
+  if(!fs.existsSync(root_dir + "repositories")){
+    fs.mkdirSync(root_dir + "repositories");
   }
 
-  if(!fs.existsSync("repositories" + "/" + args["organization"])){
+  if(!fs.existsSync(root_dir + "repositories" + "/" + args["organization"])){
     fs.mkdirSync(
+      root_dir +
       "repositories"       + "/" +
       args["organization"]
     )

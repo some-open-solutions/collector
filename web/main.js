@@ -17,8 +17,8 @@ function createWindow () {
   // Create the browser window.
   mainWindow = new BrowserWindow({
     // frame: false,
-    title: "Collector: Kitten " + app.getVersion(),
-    icon: __dirname + "/logos/collector.ico",
+    title: "Collector: Cat " + app.getVersion(),
+    icon: __dirname + "/logos/collector_sized.png",
     webPreferences: {
       //contextIsolation:           true, //has to be false with the way I've designed this
       enableRemoteModule:         true,
@@ -30,7 +30,7 @@ function createWindow () {
   mainWindow.maximize()
 
   // and load the index.html of the app.
-  mainWindow.loadFile(__dirname +'/kitten/index_local.html')
+  mainWindow.loadFile(__dirname +'/App/index_local.html')
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools()
@@ -39,9 +39,9 @@ app.on('ready', () => {
   createWindow();
 })
 app.on('window-all-closed', function () {
- if (process.platform !== 'darwin') {
+ //if (process.platform !== 'darwin') {
   app.quit()
- }
+ //}
 })
 
 app.on('activate', function () {
@@ -55,6 +55,7 @@ app.on('activate', function () {
 */
 require("./ElectronModules/fs.js")
 require("./ElectronModules/git.js")
+require("./ElectronModules/openFolders.js")
 
 
 /*

@@ -5,6 +5,104 @@ window.onload=function(){
     if(typeof(Collector) !== "undefined"){
       clearInterval(wait_for_collector);
       Collector.electron = {
+        fs: {
+          delete_experiment: function(
+            exp_name,
+            file_action
+          ){
+            delete_response = ipc.sendSync('fs_delete_experiment',{
+              "exp_name" : exp_name
+            });
+            file_action(delete_response);
+          },
+          delete_file: function(
+            file_path
+          ){
+            return ipc.sendSync(
+              'fs_delete_file',{
+                "file_path": file_path
+              }
+            );
+          },
+          delete_survey: function(
+            survey_name,
+            file_action
+          ){
+            return ipc.sendSync('fs_delete_survey',{
+              "survey_name" : survey_name
+            });
+          },
+          delete_trialtype: function(
+            exp_name,
+            file_action
+          ){
+            delete_response = ipc.sendSync('fs_delete_trialtype',{
+              "trialtype_name" : exp_name
+            });
+            file_action(delete_response);
+          },
+          list_trialtypes: function(){
+            return ipc.sendSync('fs_list_trialtypes');
+          },
+          home_dir: function(){
+            return ipc.sendSync('fs_home_dir')
+          },
+          read_default: function(
+            user_folder,
+            this_file
+          ){
+            file_content = ipc.sendSync('fs_read_default',{
+              "user_folder" : user_folder,
+              "this_file"   : this_file
+            });
+            return file_content;
+          },
+          read_file: function(
+            user_folder,
+            this_file
+          ){
+            file_content = ipc.sendSync('fs_read_file',{
+              "user_folder" : user_folder,
+              "this_file"   : this_file
+            });
+            return file_content;
+          },
+          write_data: function(
+            experiment_folder,
+            this_file,
+            file_content
+          ){
+            write_response = ipc.sendSync('fs_write_data',{
+              "experiment_folder"  : experiment_folder,
+              "this_file"          : this_file,
+              "file_content"       : file_content
+            });
+            return write_response;
+          },
+          write_experiment: function(
+            this_experiment,
+            file_content,
+            file_action
+          ){
+            write_response = ipc.sendSync('fs_write_experiment',{
+              "this_experiment" : this_experiment,
+              "file_content"    : file_content
+            });
+            file_action(write_response);
+          },
+          write_file: function(
+            user_folder,
+            this_file,
+            file_content
+          ){
+            write_response = ipc.sendSync('fs_write_file',{
+              "user_folder"  : user_folder,
+              "this_file"    : this_file,
+              "file_content" : file_content
+            });
+            return write_response;
+          }
+        },
         git:{
           add_changes: function(repo_info){
             return ipc.sendSync(
@@ -73,6 +171,20 @@ window.onload=function(){
               }
             )
           },
+          set_email: function(email){
+            return ipc.sendSync(
+              'git_set_email',
+              {
+                email: email
+              }
+            )
+          },
+          status: function(repo_info){
+            return ipc.sendSync('git_status', {
+              organization: repo_info.organization,
+              repository: repo_info.repository
+            });
+          },
           switch_repo: function(repo_info){
             return ipc.sendSync(
               'git_switch_repo',
@@ -92,92 +204,14 @@ window.onload=function(){
             )
           }
         },
-        fs: {
-          delete_experiment: function(
-            exp_name,
-            file_action
-          ){
-            delete_response = ipc.sendSync('fs_delete_experiment',{
-              "exp_name" : exp_name
-            });
-            file_action(delete_response);
-          },
-          delete_survey: function(
-            survey_name,
-            file_action
-          ){
-            delete_response = ipc.sendSync('fs_delete_survey',{
-              "survey_name" : survey_name
-            });
-          },
-          delete_trialtype: function(
-            exp_name,
-            file_action
-          ){
-            delete_response = ipc.sendSync('fs_delete_trialtype',{
-              "trialtype_name" : exp_name
-            });
-            file_action(delete_response);
-          },
-          list_trialtypes: function(){
-            return ipc.sendSync('fs_list_trialtypes');
-          },
-          read_default: function(
-            user_folder,
-            this_file
-          ){
-            file_content = ipc.sendSync('fs_read_default',{
-              "user_folder" : user_folder,
-              "this_file"   : this_file
-            });
-            return file_content;
-          },
-          read_file: function(
-            user_folder,
-            this_file
-          ){
-            file_content = ipc.sendSync('fs_read_file',{
-              "user_folder" : user_folder,
-              "this_file"   : this_file
-            });
-            return file_content;
-          },
-          write_data: function(
-            experiment_folder,
-            this_file,
-            file_content
-          ){
-            write_response = ipc.sendSync('fs_write_data',{
-              "experiment_folder"  : experiment_folder,
-              "this_file"          : this_file,
-              "file_content"       : file_content
-            });
-            return write_response;
-          },
-          write_experiment: function(
-            this_experiment,
-            file_content,
-            file_action
-          ){
-            write_response = ipc.sendSync('fs_write_experiment',{
-              "this_experiment" : this_experiment,
-              "file_content"    : file_content
-            });
-            file_action(write_response);
-          },
-          write_file: function(
-            user_folder,
-            this_file,
-            file_content
-          ){
-            write_response = ipc.sendSync('fs_write_file',{
-              "user_folder"  : user_folder,
-              "this_file"    : this_file,
-              "file_content" : file_content
-            });
-            return write_response;
-          }
-        },
+        open_folder: function(folder){
+          return ipc.sendSync(
+            'open_folder',
+            {
+              folder: folder
+            }
+          );
+        }
       }
     }
   },100);
